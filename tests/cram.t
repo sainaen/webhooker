@@ -2,7 +2,7 @@
 
 webhooker tests init:
 
-  $ go build github.com/piranha/webhooker
+  $ go build github.com/sainaen/webhooker
   $ post() {
   > curl -s --data-urlencode payload@$1 http://localhost:1234/
   > }
@@ -43,7 +43,7 @@ Usage:
   
   Application Options:
     -i, --interface= ip to listen on
-    -p, --port=      port to listen on (8000)
+    -p, --port=      port to listen on (default: 8000)
     -l, --log=       path to file for logging
     -c, --config=    read rules from this file
     -d, --dump       dump rules to console
