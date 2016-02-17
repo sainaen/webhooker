@@ -13,10 +13,11 @@ type GithubUser struct {
 }
 
 type GithubRepo struct {
-	Name    string
-	Url     string
-	Private bool
-	Owner   GithubUser
+	Name     string
+	Fullname string `json:"full_name"`
+	Url      string
+	Private  bool
+	Owner    GithubUser
 }
 
 type GithubCommit struct {
@@ -34,7 +35,7 @@ type GithubPayload struct {
 }
 
 func (g *GithubPayload) RepoName() string {
-	return g.Repository.Owner.Name + "/" + g.Repository.Name
+	return g.Repository.Fullname
 }
 
 func (g *GithubPayload) BranchName() string {
