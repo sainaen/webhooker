@@ -3,8 +3,11 @@
 webhooker tests init:
 
   $ go build github.com/sainaen/webhooker
-  $ post() {
-  > curl -s --data-urlencode payload@$1 http://localhost:1234/
+  $ githubPost() {
+  > curl -s --header "X-Github-Event: push" --data-urlencode payload@$1 http://localhost:1234/
+  > }
+  $ bitbucketPost() {
+  > curl -s --header "X-Event-Key: push" --data-urlencode payload@$1 http://localhost:1234/
   > }
   $ ./webhooker -p 1234 \
   > 'octokitty/testing:master=echo OTM' \
@@ -52,9 +55,13 @@ Usage:
 
 Check that it works:
 
-  $ post $TESTDIR/example.json
+  $ githubPost $TESTDIR/gh-example.json
   [\d/: ]+ 'echo OTM' for octokitty/testing output: OTM (re)
-  $ post $TESTDIR/other.json
+  $ githubPost $TESTDIR/gh-other.json
+  [\d/: ]+ 'echo \$REPO' for hellothere/other output: hellothere/other (re)
+  $ bitbucketPost $TESTDIR/bb-example.json
+  [\d/: ]+ 'echo OTM' for octokitty/testing output: OTM (re)
+  $ bitbucketPost $TESTDIR/bb-other.json
   [\d/: ]+ 'echo \$REPO' for hellothere/other output: hellothere/other (re)
 
 Cool down:

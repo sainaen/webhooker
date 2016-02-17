@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	flags "github.com/jessevdk/go-flags"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
-	"io/ioutil"
 )
 
 /// Globals
@@ -35,6 +35,7 @@ type Payload interface {
 	RepoName() string
 	BranchName() string
 	EnvData() []string
+	Trigger() bool
 }
 
 func GetPath(p Payload) string {
@@ -48,58 +49,6 @@ type Rule interface {
 }
 
 type Config []Rule
-
-/// Github types
-
-type GithubUser struct {
-	Name  string
-	Email string
-}
-
-type GithubRepo struct {
-	Name    string
-	Url     string
-	Private bool
-	Owner   GithubUser
-}
-
-type GithubCommit struct {
-	Id        string
-	Message   string
-	Timestamp string
-	Url       string
-	Author    GithubUser
-}
-
-type GithubPayload struct {
-	Ref        string
-	Repository GithubRepo
-	Commits    []GithubCommit
-}
-
-func (g *GithubPayload) RepoName() string {
-	return g.Repository.Owner.Name+"/"+g.Repository.Name
-}
-
-func (g *GithubPayload) BranchName() string {
-	return strings.TrimPrefix(g.Ref, "refs/heads/")
-}
-
-func (g *GithubPayload) EnvData() []string {
-	commit := g.Commits[0]
-
-	return []string{
-		env("REPO", g.RepoName()),
-		env("REPO_URL", g.Repository.Url),
-		env("PRIVATE", fmt.Sprintf("%t", g.Repository.Private)),
-		env("BRANCH", g.Ref),
-		env("COMMIT", commit.Id),
-		env("COMMIT_MESSAGE", commit.Message),
-		env("COMMIT_TIME", commit.Timestamp),
-		env("COMMIT_AUTHOR", commit.Author.Name),
-		env("COMMIT_URL", commit.Url),
-	}
-}
 
 /// Rule implementation
 
@@ -124,7 +73,7 @@ func (r *PatRule) Run(data Payload) error {
 		env("PATH", os.Getenv("PATH")),
 		env("HOME", os.Getenv("HOME")),
 		env("USER", os.Getenv("USER")),
-		)
+	)
 
 	out, err := cmd.CombinedOutput()
 	log.Printf("'%s' for %s output: %s", r.Command, data.RepoName(), out)
@@ -166,7 +115,13 @@ func (c Config) ExecutePayload(data Payload) error {
 }
 
 func (c Config) HandleRequest(w http.ResponseWriter, r *http.Request) {
-	data := new(GithubPayload)
+	data := c.GuessPayload(r)
+	if data == nil {
+		log.Println("Unknown request payload type (cannot guess the source)")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	err := json.Unmarshal([]byte(r.PostFormValue("payload")), data)
 	if err != nil {
 		log.Println(err)
@@ -174,7 +129,22 @@ func (c Config) HandleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.ExecutePayload(data)
+	if data.Trigger() {
+		c.ExecutePayload(data)
+	} else {
+		log.Println("Received request isn't a trigger (e.g. branch removal)")
+	}
+}
+
+func (c Config) GuessPayload(r *http.Request) Payload {
+	if r.Header.Get("X-Github-Event") != "" {
+		return new(GithubPayload)
+	} else if r.Header.Get("X-Event-Key") == "push" {
+		// only 'push' event supported
+		return new(BitbucketPayload)
+	} else {
+		return nil
+	}
 }
 
 /// Main
