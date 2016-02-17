@@ -139,7 +139,7 @@ func (c Config) HandleRequest(w http.ResponseWriter, r *http.Request) {
 func (c Config) GuessPayload(r *http.Request) Payload {
 	if r.Header.Get("X-Github-Event") != "" {
 		return new(GithubPayload)
-	} else if r.Header.Get("X-Event-Key") == "push" {
+	} else if r.Header.Get("X-Event-Key") == "repo:push" {
 		// only 'push' event supported
 		return new(BitbucketPayload)
 	} else {
