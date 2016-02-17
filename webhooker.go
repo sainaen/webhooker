@@ -122,7 +122,7 @@ func (c Config) HandleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := json.Unmarshal([]byte(r.PostFormValue("payload")), data)
+	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
