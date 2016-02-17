@@ -118,7 +118,7 @@ func (c Config) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	data := c.GuessPayload(r)
 	if data == nil {
 		log.Println("Unknown request payload type (cannot guess the source)")
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusAccepted)
 		return
 	}
 
