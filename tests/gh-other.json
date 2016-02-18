@@ -2,6 +2,7 @@
     "ref":"refs/heads/lolster",
     "repository": {
         "name":"other",
+		"full_name": "hellothere/other",
         "owner":{
             "name":"hellothere"
         }

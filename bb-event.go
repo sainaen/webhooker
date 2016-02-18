@@ -1,6 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+)
 
 /// Bitbucket types
 type BitbucketUser struct {
@@ -86,4 +90,14 @@ func (b *BitbucketPayload) EnvData() []string {
 		env("COMMIT_AUTHOR", commit.Author.Name),
 		env("COMMIT_URL", commit.Links.Html.Href),
 	}
+}
+
+func IsBitbucketPayload(r *http.Request) bool {
+	return r.Header.Get("X-Event-Key") == "repo:push" && r.Header.Get("Content-Type") == "application/json"
+}
+
+func ExtractBitbucketPayload(r *http.Request) (Payload, error) {
+	payload := new(BitbucketPayload)
+	err := json.NewDecoder(r.Body).Decode(payload)
+	return payload, err
 }

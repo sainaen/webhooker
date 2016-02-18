@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 )
 
@@ -60,4 +62,25 @@ func (g *GithubPayload) EnvData() []string {
 
 func (g *GithubPayload) Trigger() bool {
 	return true
+}
+
+func IsGithubPayload(r *http.Request) bool {
+	return r.Header.Get("X-Github-Event") == "push" &&
+		(r.Header.Get("Content-Type") == "application/json" || r.Header.Get("Content-Type") == "application/x-www-form-urlencoded")
+}
+
+func ExtractGithubPayload(r *http.Request) (Payload, error) {
+	payload := new(GithubPayload)
+
+	contentType := r.Header.Get("Content-Type")
+	switch contentType {
+	case "application/x-www-form-urlencoded":
+		err := json.Unmarshal([]byte(r.PostFormValue("payload")), payload)
+		return payload, err
+	case "application/json":
+		err := json.NewDecoder(r.Body).Decode(payload)
+		return payload, err
+	default:
+		return nil, fmt.Errorf("Uknown content type %s", contentType)
+	}
 }

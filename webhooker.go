@@ -3,12 +3,12 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	flags "github.com/jessevdk/go-flags"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"os"
 	"os/exec"
 	"regexp"
@@ -115,35 +115,36 @@ func (c Config) ExecutePayload(data Payload) error {
 }
 
 func (c Config) HandleRequest(w http.ResponseWriter, r *http.Request) {
-	data := c.GuessPayload(r)
-	if data == nil {
-		log.Println("Unknown request payload type (cannot guess the source)")
+	reqDump, e := httputil.DumpRequest(r, true)
+
+	if e != nil {
+		log.Printf("%s\n", e)
 		w.WriteHeader(http.StatusAccepted)
 		return
 	}
 
-	err := json.NewDecoder(r.Body).Decode(&data)
+	payload, err := ExtractPayload(r)
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("%s while handling\n%s\n", err, reqDump)
+		w.WriteHeader(http.StatusAccepted)
 		return
 	}
 
-	if data.Trigger() {
-		c.ExecutePayload(data)
+	if payload.Trigger() {
+		c.ExecutePayload(payload)
 	} else {
 		log.Println("Received request isn't a trigger (e.g. branch removal)")
+		log.Printf("%v\n", err, reqDump)
 	}
 }
 
-func (c Config) GuessPayload(r *http.Request) Payload {
-	if r.Header.Get("X-Github-Event") != "" {
-		return new(GithubPayload)
-	} else if r.Header.Get("X-Event-Key") == "repo:push" {
-		// only 'push' event supported
-		return new(BitbucketPayload)
+func ExtractPayload(r *http.Request) (Payload, error) {
+	if IsGithubPayload(r) {
+		return ExtractGithubPayload(r)
+	} else if IsBitbucketPayload(r) {
+		return ExtractBitbucketPayload(r)
 	} else {
-		return nil
+		return nil, fmt.Errorf("Unknown payload type")
 	}
 }
 

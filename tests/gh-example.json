@@ -129,6 +129,7 @@
       "language":"Ruby",
       "master_branch":"master",
       "name":"testing",
+      "full_name":"octokitty/testing",
       "open_issues":2,
       "owner":{
          "email":"lolwut@noway.biz",
