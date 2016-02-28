@@ -50,6 +50,8 @@ func (g *GithubPayload) EnvData() []string {
 	return []string{
 		env("REPO", g.RepoName()),
 		env("REPO_URL", g.Repository.Url),
+		env("CLONE_URL_HTTPS", fmt.Sprintf("%s.git", g.Repository.Url)),
+		env("CLONE_URL_SSH", fmt.Sprintf("git@github.com:%s.git", g.RepoName())),
 		env("PRIVATE", fmt.Sprintf("%t", g.Repository.Private)),
 		env("BRANCH", g.Ref),
 		env("COMMIT", commit.Id),

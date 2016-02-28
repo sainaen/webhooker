@@ -78,10 +78,13 @@ func (b *BitbucketPayload) BranchName() string {
 
 func (b *BitbucketPayload) EnvData() []string {
 	commit := b.Push.Changes[0].New.Target
+	https_url := fmt.Sprintf("https://bitbucket.org/%s", b.RepoName())
 
 	return []string{
 		env("REPO", b.RepoName()),
-		env("REPO_URL", fmt.Sprintf("https://bitbucket.org/%s", b.RepoName())),
+		env("REPO_URL", https_url),
+		env("CLONE_URL_HTTPS", fmt.Sprintf("%s.git", https_url)),
+		env("CLONE_URL_SSH", fmt.Sprintf("git@bitbucket.org:%s.git", b.RepoName())),
 		env("PRIVATE", fmt.Sprintf("%t", b.Repository.Private)),
 		env("BRANCH", b.BranchName()),
 		env("COMMIT", commit.Hash),
